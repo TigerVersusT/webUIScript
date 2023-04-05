@@ -27,60 +27,90 @@ class SqQueue(object):
             
         return sum
 
-def autoGenerateImags(driver, prompt):
+def autoGenerateImags(driver, prompt, configure, savingFolderPath):
 
     print("new generation task: "+str(prompt))
 
+    # web elements
     generateBotton = driver.find_element(by=By.ID, value="txt2img_generate")
     generatePromptBotton = driver.find_element(by=By.ID, value="paste")
     clearPromptBotton = driver.find_element(by=By.ID, value="txt2img_clear_prompt")
     saveBotton = driver.find_element(by=By.ID, value="save_txt2img")
-    
     promptTop = driver.find_element(by=By.ID, value="txt2img_prompt")
     promptArea = promptTop.find_element(By.TAG_NAME,"textarea")
+    randomSeedBotton = driver.find_element(by=By.ID, value="txt2img_random_seed")
     
-    clearPromptBotton.click()
-    driver.switch_to.alert.accept()  # 捕获弹窗，点击取消
-    driver.implicitly_wait(1)
+    batchCountParent = driver.find_element(by=By.ID, value="txt2img_batch_count")
+    batchCounts = batchCountParent.find_element(by=By.TAG_NAME, value="input")
     
-    promptArea.send_keys(prompt)
-    driver.implicitly_wait(1)
-    generatePromptBotton.click()
-    driver.implicitly_wait(1)
-    generateBotton.click()
-    driver.implicitly_wait(1)
+    # for e in batchCounts:
+    #     print (e.text())
     
-    queue = SqQueue(10)
-    flag = True
-    while flag:
-
-        response = requests.get(url=f'{url}/sdapi/v1/progress')
-        r = response.json()
-        ret = r.get("progress")
-        queue.EnQueue(float(ret))
+    # draw iteratively
+    models = configure["models"]
+    for model in models:
+        modelName = model["modelName"]
+        batch = model["batch"]
+        
+        clearPromptBotton.click()
+        driver.switch_to.alert.accept()  # 捕获弹窗，点击取消
         driver.implicitly_wait(1)
         
-        # # runing detected
-        if queue.sum() > 0.1:
+        # set model type and saving folder path
+        payload = {
+        "sd_model_checkpoint":modelName,
+        "outdir_save": savingFolderPath
+        }
+        response = requests.post(url=f'{url}/sdapi/v1/options',json=payload)
+        
+        # set batch count
+        batchCounts.send_keys('\ue003')
+        batchCounts.send_keys('\ue003')
+        batchCounts.send_keys('\ue003')
+        batchCounts.send_keys(batch)
+        
+        # set seed
+        randomSeedBotton.click()
+        
+        # input prompts
+        promptArea.send_keys(prompt)
+        driver.implicitly_wait(1)
+        generatePromptBotton.click()
+        driver.implicitly_wait(1)
+        generateBotton.click()
+        driver.implicitly_wait(1)
+        
+        queue = SqQueue(10)
+        flag = True
+        while flag:
+
+            response = requests.get(url=f'{url}/sdapi/v1/progress')
+            r = response.json()
+            ret = r.get("progress")
+            queue.EnQueue(float(ret))
+            driver.implicitly_wait(1)
             
-            while True:
+            # runing detected
+            if queue.sum() > 0.1:
                 
-                response = requests.get(url=f'{url}/sdapi/v1/progress')
-                r = response.json()
-                ret = r.get("progress")
-                queue.EnQueue(float(ret))
-                driver.implicitly_wait(3)
-                
-                print(queue.sum())
-                
-                # finish detected
-                if abs(queue.sum() - 0) < 0.01: 
+                while True:
                     
-                    driver.implicitly_wait(5)
-                    saveBotton.click()
-                    driver.implicitly_wait(5)
-                    flag = False
-                    break
+                    response = requests.get(url=f'{url}/sdapi/v1/progress')
+                    r = response.json()
+                    ret = r.get("progress")
+                    queue.EnQueue(float(ret))
+                    driver.implicitly_wait(3)
+                    
+                    print(queue.sum())
+                    
+                    # finish detected
+                    if abs(queue.sum() - 0) < 0.01: 
+                        
+                        driver.implicitly_wait(10)
+                        saveBotton.click()
+                        driver.implicitly_wait(100)
+                        flag = False
+                        break
     return
 
 import os
@@ -93,15 +123,23 @@ driver.get(url)
 driver.implicitly_wait(10)
     
 for file in filenames:
-    filePath = os.path.join(path, file)
+    scenePath = os.path.join(path, file)
+    files = os.listdir(scenePath)
+    if  len(files) < 2:
+        print("文件错误！")
+        break
     
-    f = open(filePath, "r")
-    prompt = f.readlines()
+    jsonPath = os.path.join(scenePath,"model.json")
+    promptPath =  os.path.join(scenePath,"prompt.txt")
+    
+    # prompts
+    promptF = open(promptPath, "r")
+    prompt = promptF.readlines()
+    # configue
+    configure = json.load(open(jsonPath))
 
-    autoGenerateImags(driver, prompt)
+    autoGenerateImags(driver, prompt, configure, "/home/tiansi/testWebUIScripts/")
     
-    f.close()
+    promptF.close()
 
 driver.close()
-        
-

@@ -1,0 +1,8 @@
+{
+    "models": [
+        {
+            "modelName": "v1-5-pruned-emaonly.safetensors",
+            "batch": 10
+        }
+    ]
+}

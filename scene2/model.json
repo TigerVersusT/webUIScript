@@ -1,0 +1,12 @@
+{
+    "models": [
+        {
+            "modelName": "v1-5-pruned-emaonly.safetensors",
+            "batch": 10
+        },
+        {
+            "modelName": "Anything-V3.0-pruned-fp16.ckpt",
+            "batch": 5
+        }
+    ]
+}
