@@ -1,0 +1,3 @@
+puppy dog
+Negative prompt: ugly
+Steps: 5, Sampler: Euler, CFG scale: 7, Seed: 2500211567, Face restoration: CodeFormer, Size: 512x512, Model hash: 6ce0161689, Model: v1-5-pruned-emaonly, Denoising strength: 0, Hires upscale: 2, Hires upscaler: Latent
