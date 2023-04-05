@@ -6,6 +6,7 @@ from PIL import Image, PngImagePlugin
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import numpy as np
+import time
 
 url = "http://127.0.0.1:7860"
 
@@ -43,40 +44,44 @@ def autoGenerateImags(driver, prompt, configure, savingFolderPath):
     batchCountParent = driver.find_element(by=By.ID, value="txt2img_batch_count")
     batchCounts = batchCountParent.find_element(by=By.TAG_NAME, value="input")
     
-    # for e in batchCounts:
-    #     print (e.text())
-    
     # draw iteratively
     models = configure["models"]
     for model in models:
         modelName = model["modelName"]
         batch = model["batch"]
         
+        # set model type and saving folder path
+        payload = {
+        "sd_model_checkpoint":modelName,
+        "outdir_save": savingFolderPath,
+        "sd_checkpoint_cache": 3,
+        "sd_vae_checkpoint_cache": 3,
+        }
+        response = requests.post(url=f'{url}/sdapi/v1/options',json=payload)
+        
         clearPromptBotton.click()
         driver.switch_to.alert.accept()  # 捕获弹窗，点击取消
         driver.implicitly_wait(1)
         
-        # set model type and saving folder path
-        payload = {
-        "sd_model_checkpoint":modelName,
-        "outdir_save": savingFolderPath
-        }
-        response = requests.post(url=f'{url}/sdapi/v1/options',json=payload)
-        
         # set batch count
         batchCounts.send_keys('\ue003')
+        driver.implicitly_wait(1)
         batchCounts.send_keys('\ue003')
+        driver.implicitly_wait(1)
         batchCounts.send_keys('\ue003')
+        driver.implicitly_wait(1)
         batchCounts.send_keys(batch)
-        
-        # set seed
-        randomSeedBotton.click()
+        driver.implicitly_wait(1)
         
         # input prompts
         promptArea.send_keys(prompt)
         driver.implicitly_wait(1)
         generatePromptBotton.click()
         driver.implicitly_wait(1)
+        # set seed
+        randomSeedBotton.click()
+        driver.implicitly_wait(1)
+        # generate image
         generateBotton.click()
         driver.implicitly_wait(1)
         
@@ -108,7 +113,8 @@ def autoGenerateImags(driver, prompt, configure, savingFolderPath):
                         
                         driver.implicitly_wait(10)
                         saveBotton.click()
-                        driver.implicitly_wait(100)
+                        driver.implicitly_wait(10)
+                        time.sleep(5)
                         flag = False
                         break
     return
@@ -138,7 +144,7 @@ for file in filenames:
     # configue
     configure = json.load(open(jsonPath))
 
-    autoGenerateImags(driver, prompt, configure, "/home/tiansi/testWebUIScripts/")
+    autoGenerateImags(driver, prompt, configure, "/home/tiansi/testWebUIScripts/"+file+"/")
     
     promptF.close()
 

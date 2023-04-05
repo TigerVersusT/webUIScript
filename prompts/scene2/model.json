@@ -2,11 +2,11 @@
     "models": [
         {
             "modelName": "v1-5-pruned-emaonly.safetensors",
-            "batch": 10
+            "batch": 2
         },
         {
             "modelName": "Anything-V3.0-pruned-fp16.ckpt",
-            "batch": 5
+            "batch": 2
         }
     ]
 }
